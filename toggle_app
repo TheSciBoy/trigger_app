@@ -9,23 +9,23 @@ def get_window_visible_and_id(inner_process_name: str) -> tuple[bool, str]:
     cmd = ['xdotool', 'search', '--onlyvisible', '--classname', inner_process_name]
     output = subprocess.run(cmd, check=False, capture_output=True).stdout
     if output:
-        print(f'Process {inner_process_name} is visible')
-        return (True, output.decode().split()[0])
+        # print(f'Process {inner_process_name} is visible')
+        return (True, output.decode().split())
     cmd = ['xdotool', 'search', '--classname', inner_process_name]
     output = subprocess.run(cmd, check=False, capture_output=True).stdout
     if output:
-        print(f'Process {inner_process_name} is not visible')
-        return (False, output.decode().split()[0])
-    print(f'Process {inner_process_name} is not running')
+        # print(f'Process {inner_process_name} is not visible')
+        return (False, output.decode().split())
+    # print(f'Process {inner_process_name} is not running')
     return (False, '')
 
 
 def is_process_running(inner_process_name: str) -> bool:
     for proc in psutil.process_iter(['pid', 'name', 'username']):
         if proc.info['name'] == inner_process_name:
-            print(f'Process {inner_process_name} is already running')
+            # print(f'Process {inner_process_name} is already running')
             return True
-    print(f'Process {inner_process_name} is not running')
+    # print(f'Process {inner_process_name} is not running')
     return False
 
 
@@ -38,10 +38,12 @@ if __name__ == '__main__':
         visible, window_id = get_window_visible_and_id(process_name)
         if window_id:
             if visible:
-                subprocess.run(['xdotool', 'windowminimize', window_id], check=True)
+                for wid in window_id:
+                    subprocess.run(['xdotool', 'windowminimize', wid], check=True)
                 sys.exit(0)
             else:
-                subprocess.run(['xdotool', 'windowactivate', window_id], check=True)
+                for wid in window_id:
+                    subprocess.run(['xdotool', 'windowactivate', wid], check=True)
                 sys.exit(0)
     subprocess.Popen([process_name], start_new_session=True)
 
