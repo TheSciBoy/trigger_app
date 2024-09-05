@@ -1,32 +1,41 @@
 #!/usr/bin/env python3
+from typing import Tuple, List
 
 import psutil
 import sys
 import subprocess
 
 
-def get_window_visible_and_id(inner_process_name: str) -> tuple[bool, str]:
+def get_window_visible_and_id(inner_process_name: str) -> tuple[bool, list[str]]:
     cmd = ['xdotool', 'search', '--onlyvisible', '--classname', inner_process_name]
     output = subprocess.run(cmd, check=False, capture_output=True).stdout
     if output:
         # print(f'Process {inner_process_name} is visible')
-        return (True, output.decode().split())
+        return True, output.decode().split()
     cmd = ['xdotool', 'search', '--classname', inner_process_name]
     output = subprocess.run(cmd, check=False, capture_output=True).stdout
     if output:
         # print(f'Process {inner_process_name} is not visible')
-        return (False, output.decode().split())
+        return False, output.decode().split()
     # print(f'Process {inner_process_name} is not running')
-    return (False, '')
+    return False, list()
 
 
 def is_process_running(inner_process_name: str) -> bool:
     for proc in psutil.process_iter(['pid', 'name', 'username']):
-        if proc.info['name'] == inner_process_name:
+        if proc.name() == inner_process_name:
             # print(f'Process {inner_process_name} is already running')
             return True
     # print(f'Process {inner_process_name} is not running')
     return False
+
+
+def get_desktop() -> int:
+    return int(subprocess.run(['xdotool', 'get_desktop'], capture_output=True).stdout)
+
+
+def get_desktop_for_window(id) -> int:
+    return int(subprocess.run(['xdotool', 'get_desktop_for_window', id], capture_output=True).stdout)
 
 
 if __name__ == '__main__':
@@ -34,16 +43,20 @@ if __name__ == '__main__':
         print('Usage: python toggle_app.py <process_name>')
         sys.exit(1)
     process_name = sys.argv[1]
+    current_desktop = get_desktop()
     if is_process_running(process_name):
         visible, window_id = get_window_visible_and_id(process_name)
         if window_id:
             if visible:
                 for wid in window_id:
-                    subprocess.run(['xdotool', 'windowminimize', wid], check=True)
+                    if get_desktop_for_window(wid) == current_desktop:
+                        subprocess.run(['xdotool', 'windowminimize', wid], check=True)
                 sys.exit(0)
             else:
                 for wid in window_id:
-                    subprocess.run(['xdotool', 'windowactivate', wid], check=True)
+                    if get_desktop_for_window(wid) == current_desktop:
+                        subprocess.run(['xdotool', 'windowactivate', wid], check=True)
+                        subprocess.run(['xdotool', 'windowfocus', '--sync', wid], check=True)
                 sys.exit(0)
     subprocess.Popen([process_name], start_new_session=True)
 
